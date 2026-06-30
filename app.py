@@ -1,11 +1,18 @@
-from flask import Flask, render_template_string, jsonify, request, send_file
+from flask import Flask, render_template_string, jsonify, request, send_file, session
 import requests
 import json
 import os
 import urllib.parse
+from uuid import uuid4
 
 app = Flask(__name__)
+app.secret_key="music-soul-dice-secret"
 MEMORY_FILE = "music_dice_memory.json"
+
+def get_memory_file():
+    if "user_id" not in session:
+        session["user_id"]=str(uuid4())
+    return f"memory_{session["user_id"]}.json"
 DEFAULT_DATA = {str(i): {"label": f"面 0{i}", "song": "", "artist": "", "pic": ""} for i in range(1, 7)}
 
 # ======= 【绝对路径锁死保护】 =======
@@ -15,14 +22,19 @@ MADONNA_ABS_PATH = os.path.join(BASE_DIR, MADONNA_IMAGE_NAME)
 # ==================================
 
 def load_memory():
-    if os.path.exists(MEMORY_FILE):
+    memory_file = get_memory_file()
+    if os.path.exists(memory_file):
         try:
-            with open(MEMORY_FILE, 'r', encoding='utf-8') as f: return json.load(f)
-        except: return DEFAULT_DATA
-    return DEFAULT_DATA
+            with open(memory_file, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except:
+            return DEFAULT_DATA.copy()
+    return DEFAULT_DATA.copy()
 
 def save_memory(data):
-    with open(MEMORY_FILE, 'w', encoding='utf-8') as f: json.dump(data, f, ensure_ascii=False, indent=4)
+    memory_file = get_memory_file()
+    with open(memory_file, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=4)
 
 INDEX_HTML = """
 <!DOCTYPE html>
